@@ -1,0 +1,43 @@
+{
+  "name": "turtlecoin-serialization-helper",
+  "version": "0.0.1",
+  "description": "TurtleCoin Serialization Helper for handling over the wire encoded byte streams",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "build": "./node_modules/.bin/tsc",
+    "docs": "./node_modules/.bin/typedoc && touch docs/.nojekyll",
+    "install": "npm run build",
+    "prepublishOnly": "npm test && npm run docs",
+    "style": "./node_modules/.bin/tslint -c tslint.json src/*.ts",
+    "test": "npm run style && npm run build && npm run test-mocha",
+    "test-mocha": "./node_modules/.bin/mocha"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/turtlecoin/node-turtlecoin-serialization-helper.git"
+  },
+  "homepage": "https://serialization.turtlecoin.dev",
+  "bugs": {
+    "url": "https://github.com/turtlecoin/node-turtlecoin-serialization-helper/issues"
+  },
+  "keywords": [
+    "TurtleCoin",
+    "Stream",
+    "Helper"
+  ],
+  "author": "The TurtleCoin Developers",
+  "license": "GPL-3.0",
+  "dependencies": {
+    "big-integer": "^1.6.48",
+    "typescript": "^3.7.5",
+    "varint": "^5.0.0"
+  },
+  "devDependencies": {
+    "@types/node": "^13.1.8",
+    "@types/varint": "^5.0.0",
+    "mocha": "^7.0.0",
+    "tslint": "^6.0.0",
+    "typedoc": "^0.16.8"
+  }
+}
