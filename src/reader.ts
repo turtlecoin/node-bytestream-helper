@@ -204,7 +204,7 @@ export class Reader {
                 }
             case 8:
                 if (be) {
-                    throw new Error('Cannot read uint64_t big endian');
+                    return readUInt64BE(this.blob, start);
                 } else {
                     return readUInt64LE(this.blob, start);
                 }
@@ -306,9 +306,12 @@ export class Reader {
 
 /* Helper methods */
 
-/**
- * @ignore
- */
+/** @ignore */
+function readUInt64BE(buf: Buffer, offset: number = 0, noAssert: boolean = false): BigInteger.BigInteger {
+    return readUInt64LE(buf.slice(offset, offset + 8).swap64(), 0, noAssert);
+}
+
+/** @ignore */
 function readUInt64LE(buf: Buffer, offset: number = 0, noAssert: boolean = false): BigInteger.BigInteger {
     if (buf.length < offset + 8) {
         if (noAssert) {

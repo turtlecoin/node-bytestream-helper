@@ -313,33 +313,21 @@ export class Writer {
 
 /* Helper methods */
 
-/**
- * @ignore
- */
+/** @ignore */
 function isHex(str: string): boolean {
     const regex = new RegExp('^[0-9a-fA-F]+$');
     return regex.test(str);
 }
 
-/**
- * @ignore
- */
+/** @ignore */
 function writeUInt64BE(buf: Buffer, value: BigInteger.BigInteger, offset?: number): Buffer {
-    offset = offset || 0;
-    let bigNumber = value.toString(16);
-    if (bigNumber.length % 2 !== 0) {
-        bigNumber = bigNumber.padStart(Math.ceil(bigNumber.length / 2) * 2, '0');
-    }
-    const bigBuffer = Buffer.from(bigNumber, 'hex');
+    const buffer = writeUInt64LE(buf, value, offset);
     const tempBuffer = Buffer.alloc(8);
-    bigBuffer.copy(tempBuffer, 8 - bigBuffer.length);
-    tempBuffer.copy(buf, offset);
-    return buf;
+    buffer.swap64().copy(tempBuffer, 0);
+    return buffer;
 }
 
-/**
- * @ignore
- */
+/** @ignore */
 function writeUInt64LE(buf: Buffer, value: BigInteger.BigInteger, offset?: number): Buffer {
     offset = offset || 0;
     let bigNumber = value.toString(16);
