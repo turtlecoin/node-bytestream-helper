@@ -166,6 +166,18 @@ export class Reader {
     }
 
     /**
+     * Reads the next Date from the stream
+     * @param [be] whether to use big endian
+     */
+    public time_t(be?: boolean): Date {
+        const buffer: Buffer = (be) ? this.bytes(8).swap64() : this.bytes(8);
+
+        const epoch = BigInteger(buffer.toString('hex'), 16).toJSNumber();
+
+        return new Date(epoch * 1000);
+    }
+
+    /**
      * Reads the number of bits as an unsigned integer
      * @param bits the number of bits to read
      * @param [be] whether to use big endian

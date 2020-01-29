@@ -1,6 +1,6 @@
 {
   "name": "turtlecoin-serialization-helper",
-  "version": "0.0.3",
+  "version": "0.0.4",
   "description": "TurtleCoin Serialization Helper for handling over the wire encoded byte streams",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
@@ -34,7 +34,7 @@
     "varint": "^5.0.0"
   },
   "devDependencies": {
-    "@types/node": "^13.5.0",
+    "@types/node": "^13.5.1",
     "@types/varint": "^5.0.0",
     "mocha": "^7.0.1",
     "tslint": "^6.0.0",

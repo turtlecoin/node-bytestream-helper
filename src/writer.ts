@@ -154,6 +154,23 @@ export class Writer {
     }
 
     /**
+     * Writes a date object into the data stream
+     * @param date
+     * @param [be] whether the value should be written in big endian
+     */
+    public time_t(value: Date, be?: boolean) {
+        const num = BigInteger(value.getTime() / 1000);
+
+        const hex = num.toString(16).padStart(16, '0');
+
+        const buffer = (be) ?
+            Buffer.from(hex, 'hex').swap64() :
+            Buffer.from(hex, 'hex');
+
+        this.write(buffer);
+    }
+
+    /**
      * Writes an unsigned integer to the data
      * @param value
      * @param [bits] the number of bits to use
