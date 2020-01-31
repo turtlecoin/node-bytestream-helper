@@ -159,7 +159,8 @@ export class Writer {
      * @param [be] whether the value should be written in big endian
      */
     public time_t(value: Date, be?: boolean) {
-        const num = BigInteger(value.getTime() / 1000);
+        /* We can only write an integer here, so make sure that's what we have */
+        const num = BigInteger(Math.floor(value.getTime() / 1000));
 
         const hex = num.toString(16).padStart(16, '0');
 
