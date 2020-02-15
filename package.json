@@ -1,7 +1,7 @@
 {
-  "name": "turtlecoin-serialization-helper",
-  "version": "0.0.5",
-  "description": "TurtleCoin Serialization Helper for handling over the wire encoded byte streams",
+  "name": "bytestream-helper",
+  "version": "0.0.6",
+  "description": "bytestream serialization helper for handling over the wire encoded byte streams",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "scripts": {
@@ -15,27 +15,31 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/turtlecoin/node-turtlecoin-serialization-helper.git"
+    "url": "git+https://github.com/turtlecoin/node-bytestream-helper-helper.git"
   },
-  "homepage": "https://serialization.turtlecoin.dev",
+  "homepage": "https://bytestream.turtlecoin.dev",
   "bugs": {
-    "url": "https://github.com/turtlecoin/node-turtlecoin-serialization-helper/issues"
+    "url": "https://github.com/turtlecoin/node-bytestream-helper-helper/issues"
   },
   "keywords": [
     "TurtleCoin",
-    "Stream",
-    "Helper"
+    "bytestream",
+    "helper",
+    "serialization",
+    "encoder",
+    "decoder"
   ],
   "author": "The TurtleCoin Developers",
-  "license": "GPL-3.0",
+  "contributors": [
+    "Brandon Lehmann <brandonlehmann@gmail.com> (https://github.com/brandonlehmann)"
+  ],
+  "license": "MIT",
   "dependencies": {
     "big-integer": "^1.6.48",
-    "typescript": "^3.7.5",
-    "varint": "^5.0.0"
+    "typescript": "^3.7.5"
   },
   "devDependencies": {
     "@types/node": "^13.5.3",
-    "@types/varint": "^5.0.0",
     "mocha": "^7.0.1",
     "tslint": "^6.0.0",
     "typedoc": "^0.16.9"
