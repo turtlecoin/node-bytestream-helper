@@ -1,13 +1,15 @@
 {
   "name": "bytestream-helper",
-  "version": "0.0.6",
+  "version": "0.0.7",
   "description": "bytestream serialization helper for handling over the wire encoded byte streams",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
+  "files": [
+    "dist/*"
+  ],
   "scripts": {
     "build": "./node_modules/.bin/tsc",
     "docs": "./node_modules/.bin/typedoc && touch docs/.nojekyll",
-    "install": "npm run build",
     "prepublishOnly": "npm test && npm run docs",
     "style": "./node_modules/.bin/tslint -c tslint.json src/*.ts",
     "test": "npm run style && npm run build && npm run test-mocha",
@@ -35,13 +37,13 @@
   ],
   "license": "MIT",
   "dependencies": {
-    "big-integer": "^1.6.48",
-    "typescript": "^3.7.5"
+    "big-integer": "^1.6.48"
   },
   "devDependencies": {
-    "@types/node": "^13.5.3",
+    "@types/node": "^13.7.1",
     "mocha": "^7.0.1",
     "tslint": "^6.0.0",
-    "typedoc": "^0.16.9"
+    "typedoc": "^0.16.10",
+    "typescript": "^3.7.5"
   }
 }
