@@ -4,6 +4,6 @@
 
 'use strict';
 
-export {Reader} from './reader';
-export {Writer} from './writer';
-export {Varint} from './varint';
+export { Reader } from './reader';
+export { Writer } from './writer';
+export { Varint } from './varint';

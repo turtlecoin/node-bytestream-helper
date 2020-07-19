@@ -4,7 +4,7 @@
 
 'use strict';
 
-import {Varint} from './varint';
+import { Varint } from './varint';
 import * as BigInteger from 'big-integer';
 
 /**
@@ -14,21 +14,21 @@ export class Reader {
     /**
      * @returns the length of the blob in bytes
      */
-    get length(): number {
+    get length (): number {
         return this.blob.length;
     }
 
     /**
      * @returns the subset of the buffer that has not been read yet
      */
-    get unreadBuffer(): Buffer {
+    get unreadBuffer (): Buffer {
         return this.blob.slice(this.currentOffset);
     }
 
     /**
      * @returns the number of bytes remaining in the stream that have not been read
      */
-    get unreadBytes(): number {
+    get unreadBytes (): number {
         const unreadBytes = this.blob.length - this.currentOffset;
         return (unreadBytes >= 0) ? unreadBytes : 0;
     }
@@ -36,14 +36,14 @@ export class Reader {
     /**
      * The current offset of the reader cursor in the stream
      */
-    public currentOffset: number = 0;
+    public currentOffset = 0;
     private readonly blob: Buffer = Buffer.alloc(0);
 
     /**
      * Constructs a new Reader instance
      * @param blob either another copy of a reader, a Buffer, or a hexadecimal string representation of the data
      */
-    constructor(blob: Reader | Buffer | string) {
+    constructor (blob: Reader | Buffer | string) {
         if (blob instanceof Reader) {
             return blob;
         } else if (blob instanceof Buffer) {
@@ -59,7 +59,7 @@ export class Reader {
      * @param [count=1] the number of bytes to read
      * @returns a buffer containing the requested number of bytes
      */
-    public bytes(count?: number): Buffer {
+    public bytes (count?: number): Buffer {
         count = count || 1;
         const start = this.currentOffset;
         this.currentOffset += count;
@@ -70,7 +70,7 @@ export class Reader {
      * Reads the next 32-bytes from the stream and returns the value in hexadecimal notation
      * @returns the hash as a string
      */
-    public hash(): string {
+    public hash (): string {
         const start = this.currentOffset;
         this.currentOffset += 32;
         return this.blob.slice(start, this.currentOffset).toString('hex');
@@ -81,7 +81,7 @@ export class Reader {
      * @param [count=1] the number of bytes to read
      * @returns a string containing the bytes in hexadecimal
      */
-    public hex(count?: number): string {
+    public hex (count?: number): string {
         count = count || 1;
         const start = this.currentOffset;
         this.currentOffset += count;
@@ -94,7 +94,7 @@ export class Reader {
      * @param [be] whether to use big endian
      * @returns the value read
      */
-    public int_t(bits: number, be?: boolean): BigInteger.BigInteger {
+    public int_t (bits: number, be?: boolean): BigInteger.BigInteger {
         be = be || false;
 
         if (bits % 8 !== 0) {
@@ -111,22 +111,22 @@ export class Reader {
         this.currentOffset += 4;
 
         switch (bytes) {
-            case 1:
-                return BigInteger(this.blob.readInt8(start));
-            case 2:
-                if (be) {
-                    return BigInteger(this.blob.readInt16BE(start));
-                } else {
-                    return BigInteger(this.blob.readInt16LE(start));
-                }
-            case 4:
-                if (be) {
-                    return BigInteger(this.blob.readInt32BE(start));
-                } else {
-                    return BigInteger(this.blob.readInt32LE(start));
-                }
-            default:
-                throw new Error('cannot read int64_t');
+        case 1:
+            return BigInteger(this.blob.readInt8(start));
+        case 2:
+            if (be) {
+                return BigInteger(this.blob.readInt16BE(start));
+            } else {
+                return BigInteger(this.blob.readInt16LE(start));
+            }
+        case 4:
+            if (be) {
+                return BigInteger(this.blob.readInt32BE(start));
+            } else {
+                return BigInteger(this.blob.readInt32LE(start));
+            }
+        default:
+            throw new Error('cannot read int64_t');
         }
     }
 
@@ -134,7 +134,7 @@ export class Reader {
      * Reads a int8_t
      * @returns the value
      */
-    public int8_t(): BigInteger.BigInteger {
+    public int8_t (): BigInteger.BigInteger {
         return this.int_t(8);
     }
 
@@ -143,7 +143,7 @@ export class Reader {
      * @param [be] whether to use big endian
      * @returns the value
      */
-    public int16_t(be?: boolean): BigInteger.BigInteger {
+    public int16_t (be?: boolean): BigInteger.BigInteger {
         return this.int_t(16, be);
     }
 
@@ -152,7 +152,7 @@ export class Reader {
      * @param [be] whether to use big endian
      * @returns the value
      */
-    public int32_t(be?: boolean): BigInteger.BigInteger {
+    public int32_t (be?: boolean): BigInteger.BigInteger {
         return this.int_t(32, be);
     }
 
@@ -160,7 +160,7 @@ export class Reader {
      * Skips the specified number of bytes in the stream
      * @param [count=1] the number of bytes to skip
      */
-    public skip(count?: number) {
+    public skip (count?: number) {
         count = count || 1;
         this.currentOffset += count;
     }
@@ -169,7 +169,7 @@ export class Reader {
      * Reads the next Date from the stream
      * @param [be] whether to use big endian
      */
-    public time_t(be?: boolean): Date {
+    public time_t (be?: boolean): Date {
         const buffer: Buffer = (be) ? this.bytes(8).swap64() : this.bytes(8);
 
         const epoch = BigInteger(buffer.toString('hex'), 16).toJSNumber();
@@ -183,7 +183,7 @@ export class Reader {
      * @param [be] whether to use big endian
      * @returns the value read
      */
-    public uint_t(bits: number, be?: boolean): BigInteger.BigInteger {
+    public uint_t (bits: number, be?: boolean): BigInteger.BigInteger {
         be = be || false;
 
         if (bits % 8 !== 0) {
@@ -200,28 +200,28 @@ export class Reader {
         this.currentOffset += bytes;
 
         switch (bytes) {
-            case 1:
-                return BigInteger(this.blob.readUInt8(start));
-            case 2:
-                if (be) {
-                    return BigInteger(this.blob.readUInt16BE(start));
-                } else {
-                    return BigInteger(this.blob.readUInt16LE(start));
-                }
-            case 4:
-                if (be) {
-                    return BigInteger(this.blob.readUInt32BE(start));
-                } else {
-                    return BigInteger(this.blob.readUInt32LE(start));
-                }
-            case 8:
-                if (be) {
-                    return readUInt64BE(this.blob, start);
-                } else {
-                    return readUInt64LE(this.blob, start);
-                }
-            default:
-                throw new Error('Cannot read uint_t');
+        case 1:
+            return BigInteger(this.blob.readUInt8(start));
+        case 2:
+            if (be) {
+                return BigInteger(this.blob.readUInt16BE(start));
+            } else {
+                return BigInteger(this.blob.readUInt16LE(start));
+            }
+        case 4:
+            if (be) {
+                return BigInteger(this.blob.readUInt32BE(start));
+            } else {
+                return BigInteger(this.blob.readUInt32LE(start));
+            }
+        case 8:
+            if (be) {
+                return readUInt64BE(this.blob, start);
+            } else {
+                return readUInt64LE(this.blob, start);
+            }
+        default:
+            throw new Error('Cannot read uint_t');
         }
     }
 
@@ -230,7 +230,7 @@ export class Reader {
      * @param [be] whether to use big endian
      * @returns the value
      */
-    public uint8_t(): BigInteger.BigInteger {
+    public uint8_t (): BigInteger.BigInteger {
         return this.uint_t(8);
     }
 
@@ -239,7 +239,7 @@ export class Reader {
      * @param [be] whether to use big endian
      * @returns the value
      */
-    public uint16_t(be?: boolean): BigInteger.BigInteger {
+    public uint16_t (be?: boolean): BigInteger.BigInteger {
         return this.uint_t(16, be);
     }
 
@@ -248,7 +248,7 @@ export class Reader {
      * @param [be] whether to use big endian
      * @returns the value
      */
-    public uint32_t(be?: boolean): BigInteger.BigInteger {
+    public uint32_t (be?: boolean): BigInteger.BigInteger {
         return this.uint_t(32, be);
     }
 
@@ -257,7 +257,7 @@ export class Reader {
      * @param [be] whether to use big endian
      * @returns the value
      */
-    public uint64_t(be?: boolean): BigInteger.BigInteger {
+    public uint64_t (be?: boolean): BigInteger.BigInteger {
         return this.uint_t(64, be);
     }
 
@@ -267,7 +267,7 @@ export class Reader {
      * @param [levin] whether we are reading a levin packed varint
      * @returns the value
      */
-    public varint(peek?: boolean, levin?: boolean): BigInteger.BigInteger {
+    public varint (peek?: boolean, levin?: boolean): BigInteger.BigInteger {
         const start = this.currentOffset;
 
         if (!levin) {
@@ -292,18 +292,18 @@ export class Reader {
             let bytesLeft = 0;
 
             switch (sizeMask) {
-                case 0:
-                    bytesLeft = 0;
-                    break;
-                case 1:
-                    bytesLeft = 1;
-                    break;
-                case 2:
-                    bytesLeft = 3;
-                    break;
-                case 3:
-                    bytesLeft = 7;
-                    break;
+            case 0:
+                bytesLeft = 0;
+                break;
+            case 1:
+                bytesLeft = 1;
+                break;
+            case 2:
+                bytesLeft = 3;
+                break;
+            case 3:
+                bytesLeft = 7;
+                break;
             }
 
             for (let i = 1; i <= bytesLeft; ++i) {
@@ -319,12 +319,12 @@ export class Reader {
 /* Helper methods */
 
 /** @ignore */
-function readUInt64BE(buf: Buffer, offset: number = 0, noAssert: boolean = false): BigInteger.BigInteger {
+function readUInt64BE (buf: Buffer, offset = 0, noAssert = false): BigInteger.BigInteger {
     return readUInt64LE(buf.slice(offset, offset + 8).swap64(), 0, noAssert);
 }
 
 /** @ignore */
-function readUInt64LE(buf: Buffer, offset: number = 0, noAssert: boolean = false): BigInteger.BigInteger {
+function readUInt64LE (buf: Buffer, offset = 0, noAssert = false): BigInteger.BigInteger {
     if (buf.length < offset + 8) {
         if (noAssert) {
             return BigInteger.zero;
@@ -342,14 +342,14 @@ function readUInt64LE(buf: Buffer, offset: number = 0, noAssert: boolean = false
         throw new Error('Out of bounds');
     }
 
-    const lo = first
-        + (buf[++offset] * Math.pow(2, 8))
-        + (buf[++offset] * Math.pow(2, 16))
-        + (buf[++offset] * Math.pow(2, 24));
-    const hi = (buf[++offset]
-        + (buf[++offset] * Math.pow(2, 8))
-        + (buf[++offset] * Math.pow(2, 16))
-        + (last * Math.pow(2, 24)));
+    const lo = first +
+        (buf[++offset] * Math.pow(2, 8)) +
+        (buf[++offset] * Math.pow(2, 16)) +
+        (buf[++offset] * Math.pow(2, 24));
+    const hi = (buf[++offset] +
+        (buf[++offset] * Math.pow(2, 8)) +
+        (buf[++offset] * Math.pow(2, 16)) +
+        (last * Math.pow(2, 24)));
 
     return BigInteger(lo).add(BigInteger(hi).shiftLeft(32));
 }

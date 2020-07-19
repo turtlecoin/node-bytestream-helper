@@ -15,7 +15,7 @@ export class Varint {
      * @param buf the buffer object containing the value to be decoded
      * @returns the numeric value
      */
-    public static decode(buf: Buffer): BigInteger.BigInteger {
+    public static decode (buf: Buffer): BigInteger.BigInteger {
         let counter = 0;
         let shift = 0;
         let b: any;
@@ -39,7 +39,7 @@ export class Varint {
      * @param num the numeric value
      * @returns a Buffer containing the varint encoded value
      */
-    public static encode(num: BigInteger.BigInteger): Buffer {
+    public static encode (num: BigInteger.BigInteger): Buffer {
         const out = [];
         let offset = 0;
 

@@ -4,7 +4,7 @@
 
 'use strict';
 
-import {Varint} from './varint';
+import { Varint } from './varint';
 import * as BigInteger from 'big-integer';
 
 /**
@@ -16,28 +16,28 @@ export class Writer {
     /**
      * The current data in the writer in a hexadecimal string format
      */
-    get blob(): string {
+    get blob (): string {
         return Buffer.concat(this.blobs).toString('hex');
     }
 
     /**
      * The current data in the writer as a Buffer object
      */
-    get buffer(): Buffer {
+    get buffer (): Buffer {
         return Buffer.concat(this.blobs);
     }
 
     /**
      * The length of the current data in bytes
      */
-    get length(): number {
+    get length (): number {
         return Buffer.concat(this.blobs).length;
     }
 
     /**
      * Clears the current object of all existing data
      */
-    public clear() {
+    public clear () {
         this.blobs = [];
     }
 
@@ -45,7 +45,7 @@ export class Writer {
      * Writes a 32-byte hash value to the data
      * @param hash
      */
-    public hash(hash: Buffer | string): boolean {
+    public hash (hash: Buffer | string): boolean {
         if (hash instanceof Buffer && hash.length === 32) {
             return this.write(hash);
         } else if (typeof hash === 'string' && isHex(hash) && hash.length === 64) {
@@ -58,7 +58,7 @@ export class Writer {
      * Writes a hexadecimal string to the data
      * @param hex
      */
-    public hex(hex: Buffer | string): boolean {
+    public hex (hex: Buffer | string): boolean {
         if (hex instanceof Buffer && hex.length % 2 === 0) {
             return this.write(hex);
         } else if (typeof hex === 'string' && isHex(hex) && hex.length % 2 === 0) {
@@ -73,7 +73,7 @@ export class Writer {
      * @param [bits] the number of bits to use
      * @param [be] whether the value should be written in big endian
      */
-    public int_t(value: BigInteger.BigInteger | number, bits?: number, be?: boolean): boolean {
+    public int_t (value: BigInteger.BigInteger | number, bits?: number, be?: boolean): boolean {
         be = be || false;
 
         if (bits && bits % 8 !== 0) {
@@ -101,25 +101,25 @@ export class Writer {
         const buf = Buffer.alloc(bytes);
 
         switch (bytes) {
-            case 1:
-                buf.writeInt8(value.toJSNumber(), 0);
-                break;
-            case 2:
-                if (be) {
-                    buf.writeInt16BE(value.toJSNumber(), 0);
-                } else {
-                    buf.writeInt16LE(value.toJSNumber(), 0);
-                }
-                break;
-            case 4:
-                if (be) {
-                    buf.writeInt32BE(value.toJSNumber(), 0);
-                } else {
-                    buf.writeInt32LE(value.toJSNumber(), 0);
-                }
-                break;
-            default:
-                return false;
+        case 1:
+            buf.writeInt8(value.toJSNumber(), 0);
+            break;
+        case 2:
+            if (be) {
+                buf.writeInt16BE(value.toJSNumber(), 0);
+            } else {
+                buf.writeInt16LE(value.toJSNumber(), 0);
+            }
+            break;
+        case 4:
+            if (be) {
+                buf.writeInt32BE(value.toJSNumber(), 0);
+            } else {
+                buf.writeInt32LE(value.toJSNumber(), 0);
+            }
+            break;
+        default:
+            return false;
         }
 
         this.blobs.push(buf);
@@ -131,7 +131,7 @@ export class Writer {
      * Writes a int8_t to the data
      * @param value
      */
-    public int8_t(value: BigInteger.BigInteger | number): boolean {
+    public int8_t (value: BigInteger.BigInteger | number): boolean {
         return this.int_t(value, 8);
     }
 
@@ -140,7 +140,7 @@ export class Writer {
      * @param value
      * @param [be] whether the value should be written in big endian
      */
-    public int16_t(value: BigInteger.BigInteger | number, be?: boolean): boolean {
+    public int16_t (value: BigInteger.BigInteger | number, be?: boolean): boolean {
         return this.int_t(value, 16, be);
     }
 
@@ -149,7 +149,7 @@ export class Writer {
      * @param value
      * @param [be] whether the value should be written in big endian
      */
-    public int32_t(value: BigInteger.BigInteger | number, be?: boolean): boolean {
+    public int32_t (value: BigInteger.BigInteger | number, be?: boolean): boolean {
         return this.int_t(value, 32, be);
     }
 
@@ -158,15 +158,15 @@ export class Writer {
      * @param date
      * @param [be] whether the value should be written in big endian
      */
-    public time_t(value: Date, be?: boolean) {
+    public time_t (value: Date, be?: boolean) {
         /* We can only write an integer here, so make sure that's what we have */
         const num = BigInteger(Math.floor(value.getTime() / 1000));
 
         const hex = num.toString(16).padStart(16, '0');
 
-        const buffer = (be) ?
-            Buffer.from(hex, 'hex').swap64() :
-            Buffer.from(hex, 'hex');
+        const buffer = (be)
+            ? Buffer.from(hex, 'hex').swap64()
+            : Buffer.from(hex, 'hex');
 
         this.write(buffer);
     }
@@ -177,7 +177,7 @@ export class Writer {
      * @param [bits] the number of bits to use
      * @param [be] whether the value should be written in big endian
      */
-    public uint_t(value: BigInteger.BigInteger | number, bits?: number, be?: boolean): boolean {
+    public uint_t (value: BigInteger.BigInteger | number, bits?: number, be?: boolean): boolean {
         be = be || false;
 
         if (typeof value === 'number') {
@@ -201,28 +201,28 @@ export class Writer {
         let buf = Buffer.alloc(bytes);
 
         switch (bytes) {
-            case 1:
-                buf.writeUInt8(value.toJSNumber(), 0);
-                break;
-            case 2:
-                if (be) {
-                    buf.writeInt16BE(value.toJSNumber(), 0);
-                } else {
-                    buf.writeUInt16LE(value.toJSNumber(), 0);
-                }
-                break;
-            case 4:
-                if (be) {
-                    buf.writeUInt32BE(value.toJSNumber(), 0);
-                } else {
-                    buf.writeUInt32LE(value.toJSNumber(), 0);
-                }
-                break;
-            case 8:
-                buf = (be) ? writeUInt64BE(buf, value) : writeUInt64LE(buf, value);
-                break;
-            default:
-                return false;
+        case 1:
+            buf.writeUInt8(value.toJSNumber(), 0);
+            break;
+        case 2:
+            if (be) {
+                buf.writeInt16BE(value.toJSNumber(), 0);
+            } else {
+                buf.writeUInt16LE(value.toJSNumber(), 0);
+            }
+            break;
+        case 4:
+            if (be) {
+                buf.writeUInt32BE(value.toJSNumber(), 0);
+            } else {
+                buf.writeUInt32LE(value.toJSNumber(), 0);
+            }
+            break;
+        case 8:
+            buf = (be) ? writeUInt64BE(buf, value) : writeUInt64LE(buf, value);
+            break;
+        default:
+            return false;
         }
 
         this.blobs.push(buf);
@@ -234,7 +234,7 @@ export class Writer {
      * Writes a uint8_t to the data
      * @param value
      */
-    public uint8_t(value: BigInteger.BigInteger | number): boolean {
+    public uint8_t (value: BigInteger.BigInteger | number): boolean {
         return this.uint_t(value, 8);
     }
 
@@ -243,7 +243,7 @@ export class Writer {
      * @param value
      * @param [be] whether the value should be written in big endian
      */
-    public uint16_t(value: BigInteger.BigInteger | number, be?: boolean): boolean {
+    public uint16_t (value: BigInteger.BigInteger | number, be?: boolean): boolean {
         return this.uint_t(value, 16, be);
     }
 
@@ -252,7 +252,7 @@ export class Writer {
      * @param value
      * @param [be] whether the value should be written in big endian
      */
-    public uint32_t(value: BigInteger.BigInteger | number, be?: boolean): boolean {
+    public uint32_t (value: BigInteger.BigInteger | number, be?: boolean): boolean {
         return this.uint_t(value, 32, be);
     }
 
@@ -261,7 +261,7 @@ export class Writer {
      * @param value
      * @param [be] whether the value should be written in big endian
      */
-    public uint64_t(value: BigInteger.BigInteger | number, be?: boolean): boolean {
+    public uint64_t (value: BigInteger.BigInteger | number, be?: boolean): boolean {
         return this.uint_t(value, 64, be);
     }
 
@@ -270,7 +270,7 @@ export class Writer {
      * @param value
      * @param [levin] whether the value should be levin varint encoded
      */
-    public varint(value: BigInteger.BigInteger | number, levin?: boolean): boolean {
+    public varint (value: BigInteger.BigInteger | number, levin?: boolean): boolean {
         if (typeof value === 'number') {
             value = BigInteger(value);
         }
@@ -311,7 +311,7 @@ export class Writer {
      * Writes an arbitrary type of input to the data
      * @param payload
      */
-    public write(payload: Buffer | string | object): boolean {
+    public write (payload: Buffer | string | any): boolean {
         if (payload instanceof Buffer) {
             this.blobs.push(payload);
             return true;
@@ -325,20 +325,19 @@ export class Writer {
             this.blobs.push(Buffer.from(JSON.stringify(payload)));
             return true;
         }
-        return false;
     }
 }
 
 /* Helper methods */
 
 /** @ignore */
-function isHex(str: string): boolean {
+function isHex (str: string): boolean {
     const regex = new RegExp('^[0-9a-fA-F]+$');
     return regex.test(str);
 }
 
 /** @ignore */
-function writeUInt64BE(buf: Buffer, value: BigInteger.BigInteger, offset?: number): Buffer {
+function writeUInt64BE (buf: Buffer, value: BigInteger.BigInteger, offset?: number): Buffer {
     const buffer = writeUInt64LE(buf, value, offset);
     const tempBuffer = Buffer.alloc(8);
     buffer.swap64().copy(tempBuffer, 0);
@@ -346,7 +345,7 @@ function writeUInt64BE(buf: Buffer, value: BigInteger.BigInteger, offset?: numbe
 }
 
 /** @ignore */
-function writeUInt64LE(buf: Buffer, value: BigInteger.BigInteger, offset?: number): Buffer {
+function writeUInt64LE (buf: Buffer, value: BigInteger.BigInteger, offset?: number): Buffer {
     offset = offset || 0;
     let bigNumber = value.toString(16);
     if (bigNumber.length % 2 !== 0) {
