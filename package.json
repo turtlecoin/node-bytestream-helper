@@ -1,6 +1,6 @@
 {
   "name": "bytestream-helper",
-  "version": "0.0.9",
+  "version": "0.0.10",
   "description": "bytestream serialization helper for handling over the wire encoded byte streams",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
@@ -9,7 +9,7 @@
   ],
   "scripts": {
     "build": "./node_modules/.bin/tsc",
-    "docs": "./node_modules/.bin/typedoc && touch docs/.nojekyll",
+    "docs": "./node_modules/.bin/typedoc && touch docs/.nojekyll && git restore docs/CNAME",
     "prepublishOnly": "npm test && npm run docs",
     "style": "./node_modules/.bin/eslint src/*.ts",
     "fix-style": "./node_modules/.bin/eslint --fix src/*.ts",
@@ -41,18 +41,18 @@
     "big-integer": "^1.6.48"
   },
   "devDependencies": {
-    "@types/mocha": "^8.0.0",
-    "@types/node": "^13.13.14",
-    "@typescript-eslint/eslint-plugin": "^3.6.1",
-    "@typescript-eslint/parser": "^3.6.1",
-    "eslint": "^7.4.0",
+    "@types/mocha": "^8.0.3",
+    "@types/node": "^14.6.0",
+    "@typescript-eslint/eslint-plugin": "^3.9.1",
+    "@typescript-eslint/parser": "^3.9.1",
+    "eslint": "^7.7.0",
     "eslint-config-standard": "^14.1.1",
     "eslint-plugin-import": "^2.22.0",
     "eslint-plugin-node": "^11.1.0",
     "eslint-plugin-promise": "^4.2.1",
     "eslint-plugin-standard": "^4.0.1",
-    "mocha": "^7.2.0",
-    "typedoc": "^0.16.11",
+    "mocha": "^8.1.1",
+    "typedoc": "^0.18.0",
     "typescript": "^3.9.7"
   }
 }
