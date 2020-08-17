@@ -26,7 +26,7 @@ jobs:
     - name: Execute Unit Tests
       run: npm test
     - name: Publish to NPM
-        if: matrix.node == '12' && matrix.os == 'ubuntu-latest' && github.event_name == 'release' && github.repository == 'turtlecoin/node-bytestream-helper'
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
-        run: npm publish
+      if: matrix.node == '12' && matrix.os == 'ubuntu-latest' && github.event_name == 'release' && github.repository == 'turtlecoin/node-bytestream-helper'
+      env:
+        NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+      run: npm publish
