@@ -5,12 +5,38 @@
 'use strict';
 
 import { Varint } from './varint';
+import { Writer } from './writer';
 import * as BigInteger from 'big-integer';
 
 /**
  * Allows for easy reading of blob encoded data
  */
 export class Reader {
+    /**
+     * The current offset of the reader cursor in the stream
+     */
+    public currentOffset = 0;
+    private blob: Buffer = Buffer.alloc(0);
+
+    /**
+     * Constructs a new Reader instance
+     * @param blob either another copy of a reader, writer, a Buffer, or a hexadecimal string representation of the data
+     */
+    constructor (blob: Reader | Writer | Buffer | string) {
+        if (blob instanceof Reader) {
+            return blob;
+        } else if (blob instanceof Writer) {
+            this.blob = blob.buffer;
+        } else if (blob instanceof Buffer) {
+            this.blob = blob;
+        } else if (typeof blob === 'string' && blob.length % 2 === 0) {
+            this.blob = Buffer.from(blob, 'hex');
+        } else {
+            throw new Error('Unknown data type');
+        }
+        this.currentOffset = 0;
+    }
+
     /**
      * @returns the length of the blob in bytes
      */
@@ -26,6 +52,13 @@ export class Reader {
     }
 
     /**
+     * @returns the entire reader buffer
+     */
+    get buffer (): Buffer {
+        return this.blob;
+    }
+
+    /**
      * @returns the number of bytes remaining in the stream that have not been read
      */
     get unreadBytes (): number {
@@ -34,24 +67,25 @@ export class Reader {
     }
 
     /**
-     * The current offset of the reader cursor in the stream
+     * Appends the data given to the end of the current buffer of the instance of the reader
+     * @param blob either another copy of a reader, writer, a Buffer, or a hexadecimal string representation of the data
      */
-    public currentOffset = 0;
-    private readonly blob: Buffer = Buffer.alloc(0);
+    public append (blob: Reader | Writer | Buffer | string) {
+        let buffer: Buffer;
 
-    /**
-     * Constructs a new Reader instance
-     * @param blob either another copy of a reader, a Buffer, or a hexadecimal string representation of the data
-     */
-    constructor (blob: Reader | Buffer | string) {
         if (blob instanceof Reader) {
-            return blob;
+            buffer = blob.buffer;
+        } else if (blob instanceof Writer) {
+            buffer = blob.buffer;
         } else if (blob instanceof Buffer) {
-            this.blob = blob;
+            buffer = blob;
         } else if (typeof blob === 'string' && blob.length % 2 === 0) {
-            this.blob = Buffer.from(blob, 'hex');
+            buffer = Buffer.from(blob, 'hex');
+        } else {
+            throw new Error('Unknown data type');
         }
-        this.currentOffset = 0;
+
+        this.blob = Buffer.concat([this.blob, buffer]);
     }
 
     /**
@@ -59,20 +93,20 @@ export class Reader {
      * @param [count=1] the number of bytes to read
      * @returns a buffer containing the requested number of bytes
      */
-    public bytes (count?: number): Buffer {
-        count = count || 1;
+    public bytes (count = 1): Buffer {
         const start = this.currentOffset;
         this.currentOffset += count;
         return this.blob.slice(start, this.currentOffset);
     }
 
     /**
-     * Reads the next 32-bytes from the stream and returns the value in hexadecimal notation
+     * Reads the next hash of the given length from the stream and returns the value in hexadecimal notation
+     * @param length the length of the hash in bytes
      * @returns the hash as a string
      */
-    public hash (): string {
+    public hash (length = 32): string {
         const start = this.currentOffset;
-        this.currentOffset += 32;
+        this.currentOffset += length;
         return this.blob.slice(start, this.currentOffset).toString('hex');
     }
 
@@ -81,8 +115,7 @@ export class Reader {
      * @param [count=1] the number of bytes to read
      * @returns a string containing the bytes in hexadecimal
      */
-    public hex (count?: number): string {
-        count = count || 1;
+    public hex (count = 1): string {
         const start = this.currentOffset;
         this.currentOffset += count;
         return this.blob.slice(start, this.currentOffset).toString('hex');
@@ -94,7 +127,7 @@ export class Reader {
      * @param [be] whether to use big endian
      * @returns the value read
      */
-    public int_t (bits: number, be?: boolean): BigInteger.BigInteger {
+    public int_t (bits: number, be = false): BigInteger.BigInteger {
         be = be || false;
 
         if (bits % 8 !== 0) {
@@ -143,7 +176,7 @@ export class Reader {
      * @param [be] whether to use big endian
      * @returns the value
      */
-    public int16_t (be?: boolean): BigInteger.BigInteger {
+    public int16_t (be = false): BigInteger.BigInteger {
         return this.int_t(16, be);
     }
 
@@ -152,7 +185,7 @@ export class Reader {
      * @param [be] whether to use big endian
      * @returns the value
      */
-    public int32_t (be?: boolean): BigInteger.BigInteger {
+    public int32_t (be = false): BigInteger.BigInteger {
         return this.int_t(32, be);
     }
 
@@ -160,8 +193,7 @@ export class Reader {
      * Skips the specified number of bytes in the stream
      * @param [count=1] the number of bytes to skip
      */
-    public skip (count?: number) {
-        count = count || 1;
+    public skip (count = 1) {
         this.currentOffset += count;
     }
 
@@ -169,7 +201,7 @@ export class Reader {
      * Reads the next Date from the stream
      * @param [be] whether to use big endian
      */
-    public time_t (be?: boolean): Date {
+    public time_t (be = false): Date {
         const buffer: Buffer = (be) ? this.bytes(8).swap64() : this.bytes(8);
 
         const epoch = BigInteger(buffer.toString('hex'), 16).toJSNumber();
@@ -183,7 +215,7 @@ export class Reader {
      * @param [be] whether to use big endian
      * @returns the value read
      */
-    public uint_t (bits: number, be?: boolean): BigInteger.BigInteger {
+    public uint_t (bits: number, be = false): BigInteger.BigInteger {
         be = be || false;
 
         if (bits % 8 !== 0) {
@@ -227,7 +259,6 @@ export class Reader {
 
     /**
      * Reads a uint8_t
-     * @param [be] whether to use big endian
      * @returns the value
      */
     public uint8_t (): BigInteger.BigInteger {
@@ -239,7 +270,7 @@ export class Reader {
      * @param [be] whether to use big endian
      * @returns the value
      */
-    public uint16_t (be?: boolean): BigInteger.BigInteger {
+    public uint16_t (be = false): BigInteger.BigInteger {
         return this.uint_t(16, be);
     }
 
@@ -248,7 +279,7 @@ export class Reader {
      * @param [be] whether to use big endian
      * @returns the value
      */
-    public uint32_t (be?: boolean): BigInteger.BigInteger {
+    public uint32_t (be = false): BigInteger.BigInteger {
         return this.uint_t(32, be);
     }
 
@@ -257,7 +288,7 @@ export class Reader {
      * @param [be] whether to use big endian
      * @returns the value
      */
-    public uint64_t (be?: boolean): BigInteger.BigInteger {
+    public uint64_t (be = false): BigInteger.BigInteger {
         return this.uint_t(64, be);
     }
 
@@ -267,7 +298,7 @@ export class Reader {
      * @param [levin] whether we are reading a levin packed varint
      * @returns the value
      */
-    public varint (peek?: boolean, levin?: boolean): BigInteger.BigInteger {
+    public varint (peek = false, levin = false): BigInteger.BigInteger {
         const start = this.currentOffset;
 
         if (!levin) {

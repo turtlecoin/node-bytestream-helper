@@ -5,6 +5,7 @@
 'use strict';
 
 import { Varint } from './varint';
+import { Reader } from './reader';
 import * as BigInteger from 'big-integer';
 
 /**
@@ -73,7 +74,7 @@ export class Writer {
      * @param [bits] the number of bits to use
      * @param [be] whether the value should be written in big endian
      */
-    public int_t (value: BigInteger.BigInteger | number, bits?: number, be?: boolean): boolean {
+    public int_t (value: BigInteger.BigInteger | number, bits?: number, be = false): boolean {
         be = be || false;
 
         if (bits && bits % 8 !== 0) {
@@ -85,15 +86,7 @@ export class Writer {
         }
 
         if (!bits) {
-            if (value.toJSNumber() <= 255) {
-                bits = 8;
-            } else if (value.toJSNumber() <= 65535) {
-                bits = 16;
-            } else if (value.toJSNumber() <= 4294967295) {
-                bits = 32;
-            } else {
-                bits = 64;
-            }
+            bits = determineBits(value);
         }
 
         const bytes = bits / 8;
@@ -140,7 +133,7 @@ export class Writer {
      * @param value
      * @param [be] whether the value should be written in big endian
      */
-    public int16_t (value: BigInteger.BigInteger | number, be?: boolean): boolean {
+    public int16_t (value: BigInteger.BigInteger | number, be = false): boolean {
         return this.int_t(value, 16, be);
     }
 
@@ -149,16 +142,16 @@ export class Writer {
      * @param value
      * @param [be] whether the value should be written in big endian
      */
-    public int32_t (value: BigInteger.BigInteger | number, be?: boolean): boolean {
+    public int32_t (value: BigInteger.BigInteger | number, be = false): boolean {
         return this.int_t(value, 32, be);
     }
 
     /**
      * Writes a date object into the data stream
-     * @param date
+     * @param value
      * @param [be] whether the value should be written in big endian
      */
-    public time_t (value: Date, be?: boolean) {
+    public time_t (value: Date, be = false) {
         /* We can only write an integer here, so make sure that's what we have */
         const num = BigInteger(Math.floor(value.getTime() / 1000));
 
@@ -177,7 +170,7 @@ export class Writer {
      * @param [bits] the number of bits to use
      * @param [be] whether the value should be written in big endian
      */
-    public uint_t (value: BigInteger.BigInteger | number, bits?: number, be?: boolean): boolean {
+    public uint_t (value: BigInteger.BigInteger | number, bits?: number, be = false): boolean {
         be = be || false;
 
         if (typeof value === 'number') {
@@ -185,15 +178,7 @@ export class Writer {
         }
 
         if (!bits) {
-            if (value.toJSNumber() <= 255) {
-                bits = 8;
-            } else if (value.toJSNumber() <= 65535) {
-                bits = 16;
-            } else if (value.toJSNumber() <= 4294967295) {
-                bits = 32;
-            } else {
-                bits = 64;
-            }
+            bits = determineBits(value);
         }
 
         const bytes = bits / 8;
@@ -243,7 +228,7 @@ export class Writer {
      * @param value
      * @param [be] whether the value should be written in big endian
      */
-    public uint16_t (value: BigInteger.BigInteger | number, be?: boolean): boolean {
+    public uint16_t (value: BigInteger.BigInteger | number, be = false): boolean {
         return this.uint_t(value, 16, be);
     }
 
@@ -252,7 +237,7 @@ export class Writer {
      * @param value
      * @param [be] whether the value should be written in big endian
      */
-    public uint32_t (value: BigInteger.BigInteger | number, be?: boolean): boolean {
+    public uint32_t (value: BigInteger.BigInteger | number, be = false): boolean {
         return this.uint_t(value, 32, be);
     }
 
@@ -261,7 +246,7 @@ export class Writer {
      * @param value
      * @param [be] whether the value should be written in big endian
      */
-    public uint64_t (value: BigInteger.BigInteger | number, be?: boolean): boolean {
+    public uint64_t (value: BigInteger.BigInteger | number, be = false): boolean {
         return this.uint_t(value, 64, be);
     }
 
@@ -270,7 +255,7 @@ export class Writer {
      * @param value
      * @param [levin] whether the value should be levin varint encoded
      */
-    public varint (value: BigInteger.BigInteger | number, levin?: boolean): boolean {
+    public varint (value: BigInteger.BigInteger | number, levin = false): boolean {
         if (typeof value === 'number') {
             value = BigInteger(value);
         }
@@ -311,8 +296,14 @@ export class Writer {
      * Writes an arbitrary type of input to the data
      * @param payload
      */
-    public write (payload: Buffer | string | any): boolean {
-        if (payload instanceof Buffer) {
+    public write (payload: Buffer | Writer | Reader | string | any): boolean {
+        if (payload instanceof Writer) {
+            this.blobs.push(payload.buffer);
+            return true;
+        } else if (payload instanceof Reader) {
+            this.blobs.push(payload.buffer);
+            return true;
+        } else if (payload instanceof Buffer) {
             this.blobs.push(payload);
             return true;
         } else if (typeof payload === 'string' && isHex(payload) && payload.length % 2 === 0) {
@@ -332,8 +323,21 @@ export class Writer {
 
 /** @ignore */
 function isHex (str: string): boolean {
-    const regex = new RegExp('^[0-9a-fA-F]+$');
+    const regex = /^[0-9a-fA-F]+$/;
     return regex.test(str);
+}
+
+/** @ingore */
+function determineBits (value: BigInteger.BigInteger): number {
+    if (value.toJSNumber() <= 255) {
+        return 8;
+    } else if (value.toJSNumber() <= 65535) {
+        return 16;
+    } else if (value.toJSNumber() <= 4294967295) {
+        return 32;
+    } else {
+        return 64;
+    }
 }
 
 /** @ignore */
