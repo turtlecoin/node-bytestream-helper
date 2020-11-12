@@ -11,8 +11,8 @@
     "build": "./node_modules/.bin/tsc",
     "docs": "./node_modules/.bin/typedoc && touch docs/.nojekyll && git restore docs/CNAME",
     "prepublishOnly": "npm test && npm run docs",
-    "style": "./node_modules/.bin/eslint src/*.ts",
-    "fix-style": "./node_modules/.bin/eslint --fix src/*.ts",
+    "style": "./node_modules/.bin/eslint src/**/*.ts",
+    "fix-style": "./node_modules/.bin/eslint --fix src/**/*.ts",
     "test": "npm run style && npm run build && npm run test-mocha",
     "test-mocha": "./node_modules/.bin/mocha"
   },
@@ -41,18 +41,18 @@
     "big-integer": "^1.6.48"
   },
   "devDependencies": {
-    "@types/mocha": "^8.0.3",
-    "@types/node": "^14.11.8",
-    "@typescript-eslint/eslint-plugin": "^4.4.0",
-    "@typescript-eslint/parser": "^4.4.0",
-    "eslint": "^7.11.0",
-    "eslint-config-standard": "^14.1.1",
+    "@types/mocha": "^8.0.4",
+    "@types/node": "^14.14.7",
+    "@typescript-eslint/eslint-plugin": "^4.7.0",
+    "@typescript-eslint/parser": "^4.7.0",
+    "eslint": "^7.13.0",
+    "eslint-config-standard": "^16.0.1",
     "eslint-plugin-import": "^2.22.1",
     "eslint-plugin-node": "^11.1.0",
     "eslint-plugin-promise": "^4.2.1",
-    "eslint-plugin-standard": "^4.0.1",
-    "mocha": "^8.1.3",
+    "eslint-plugin-standard": "^4.1.0",
+    "mocha": "^8.2.1",
     "typedoc": "^0.19.2",
-    "typescript": "^4.0.3"
+    "typescript": "^4.0.5"
   }
 }
