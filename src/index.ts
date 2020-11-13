@@ -2,8 +2,6 @@
 //
 // Please see the included LICENSE file for more information.
 
-'use strict';
-
 export { Reader } from './reader';
 export { Writer } from './writer';
 export { Varint } from './varint';

@@ -2,69 +2,103 @@
 //
 // Please see the included LICENSE file for more information.
 
-'use strict';
-
 import { Varint } from './varint';
 import { Reader } from './reader';
 import * as BigInteger from 'big-integer';
+import { Readable } from 'stream';
 
 /**
  * Allows for easy writing of blob encoded data
  */
-export class Writer {
-    private blobs: Buffer[] = [];
+export class Writer extends Readable {
+    private m_buffer: Buffer = Buffer.alloc(0);
+    private m_readIndex = 0;
 
     /**
      * The current data in the writer in a hexadecimal string format
      */
     get blob (): string {
-        return Buffer.concat(this.blobs).toString('hex');
+        return this.toString();
     }
 
     /**
      * The current data in the writer as a Buffer object
      */
     get buffer (): Buffer {
-        return Buffer.concat(this.blobs);
+        return this.m_buffer;
     }
 
     /**
      * The length of the current data in bytes
      */
     get length (): number {
-        return Buffer.concat(this.blobs).length;
+        return this.m_buffer.length;
+    }
+
+    /** @ignore */
+    private get readIndex (): number {
+        return this.m_readIndex;
+    }
+
+    /** @ignore */
+    public _read (size: number) {
+        let okToSend = true;
+
+        while (okToSend) {
+            let slice: Buffer = Buffer.alloc(0);
+
+            if (this.readIndex + size > this.length) {
+                slice = this.m_buffer.slice(this.readIndex);
+            } else {
+                slice = this.m_buffer.slice(this.readIndex, this.readIndex + size);
+            }
+
+            if (slice.length > 0) {
+                this.push(slice);
+            } else {
+                this.push(null);
+
+                okToSend = false;
+            }
+
+            this.m_readIndex += slice.length;
+        }
     }
 
     /**
      * Clears the current object of all existing data
      */
     public clear () {
-        this.blobs = [];
+        this.m_buffer = Buffer.alloc(0);
     }
 
     /**
      * Writes a 32-byte hash value to the data
      * @param hash
+     * @param encoding the encoding of the string
      */
-    public hash (hash: Buffer | string): boolean {
+    public hash (hash: Buffer | string, encoding: BufferEncoding = 'hex'): boolean {
         if (hash instanceof Buffer && hash.length === 32) {
             return this.write(hash);
-        } else if (typeof hash === 'string' && isHex(hash) && hash.length === 64) {
-            return this.write(hash);
+        } else if (typeof hash === 'string' && hash.length === 64) {
+            return this.write(hash, encoding);
         }
+
         return false;
     }
 
     /**
      * Writes a hexadecimal string to the data
      * @param hex
+     * @param encoding the encoding of the string
      */
-    public hex (hex: Buffer | string): boolean {
-        if (hex instanceof Buffer && hex.length % 2 === 0) {
+    public hex (hex: Buffer | string, encoding: BufferEncoding = 'hex'): boolean {
+        if (hex instanceof Buffer) {
             return this.write(hex);
-        } else if (typeof hex === 'string' && isHex(hex) && hex.length % 2 === 0) {
-            return this.write(hex);
+        } else if (typeof hex === 'string') {
+            return this.write(hex, encoding);
         }
+
         return false;
     }
 
@@ -94,28 +128,28 @@ export class Writer {
         const buf = Buffer.alloc(bytes);
 
         switch (bytes) {
-        case 1:
-            buf.writeInt8(value.toJSNumber(), 0);
-            break;
-        case 2:
-            if (be) {
-                buf.writeInt16BE(value.toJSNumber(), 0);
-            } else {
-                buf.writeInt16LE(value.toJSNumber(), 0);
-            }
-            break;
-        case 4:
-            if (be) {
-                buf.writeInt32BE(value.toJSNumber(), 0);
-            } else {
-                buf.writeInt32LE(value.toJSNumber(), 0);
-            }
-            break;
-        default:
-            return false;
+            case 1:
+                buf.writeInt8(value.toJSNumber(), 0);
+                break;
+            case 2:
+                if (be) {
+                    buf.writeInt16BE(value.toJSNumber(), 0);
+                } else {
+                    buf.writeInt16LE(value.toJSNumber(), 0);
+                }
+                break;
+            case 4:
+                if (be) {
+                    buf.writeInt32BE(value.toJSNumber(), 0);
+                } else {
+                    buf.writeInt32LE(value.toJSNumber(), 0);
+                }
+                break;
+            default:
+                return false;
         }
 
-        this.blobs.push(buf);
+        this.write(buf);
 
         return true;
     }
@@ -165,6 +199,14 @@ export class Writer {
     }
 
     /**
+     * Returns the current read buffer as a string
+     * @param encoding
+     */
+    public toString (encoding: BufferEncoding = 'hex'): string {
+        return this.buffer.toString(encoding);
+    }
+
+    /**
      * Writes an unsigned integer to the data
      * @param value
      * @param [bits] the number of bits to use
@@ -186,31 +228,31 @@ export class Writer {
         let buf = Buffer.alloc(bytes);
 
         switch (bytes) {
-        case 1:
-            buf.writeUInt8(value.toJSNumber(), 0);
-            break;
-        case 2:
-            if (be) {
-                buf.writeInt16BE(value.toJSNumber(), 0);
-            } else {
-                buf.writeUInt16LE(value.toJSNumber(), 0);
-            }
-            break;
-        case 4:
-            if (be) {
-                buf.writeUInt32BE(value.toJSNumber(), 0);
-            } else {
-                buf.writeUInt32LE(value.toJSNumber(), 0);
-            }
-            break;
-        case 8:
-            buf = (be) ? writeUInt64BE(buf, value) : writeUInt64LE(buf, value);
-            break;
-        default:
-            return false;
+            case 1:
+                buf.writeUInt8(value.toJSNumber(), 0);
+                break;
+            case 2:
+                if (be) {
+                    buf.writeInt16BE(value.toJSNumber(), 0);
+                } else {
+                    buf.writeUInt16LE(value.toJSNumber(), 0);
+                }
+                break;
+            case 4:
+                if (be) {
+                    buf.writeUInt32BE(value.toJSNumber(), 0);
+                } else {
+                    buf.writeUInt32LE(value.toJSNumber(), 0);
+                }
+                break;
+            case 8:
+                buf = (be) ? writeUInt64BE(buf, value) : writeUInt64LE(buf, value);
+                break;
+            default:
+                return false;
         }
 
-        this.blobs.push(buf);
+        this.write(buf);
 
         return true;
     }
@@ -261,7 +303,7 @@ export class Writer {
         }
 
         if (!levin) {
-            this.blobs.push(Buffer.from(Varint.encode(value)));
+            this.write(Buffer.from(Varint.encode(value)));
             return true;
         } else {
             if (value.greater(BigInteger('1073741823'))) {
@@ -294,27 +336,26 @@ export class Writer {
 
     /**
      * Writes an arbitrary type of input to the data
-     * @param payload
+     * @param payload the payload to write
+     * @param encoding the encoding used in the string based data
      */
-    public write (payload: Buffer | Writer | Reader | string | any): boolean {
+    public write (payload: Buffer | Writer | Reader | string | any, encoding: BufferEncoding = 'hex'): boolean {
+        const write = (buffer: Buffer): boolean => {
+            this.m_buffer = Buffer.concat([this.m_buffer, buffer]);
+
+            return true;
+        };
+
         if (payload instanceof Writer) {
-            this.blobs.push(payload.buffer);
-            return true;
+            return write(payload.buffer);
         } else if (payload instanceof Reader) {
-            this.blobs.push(payload.buffer);
-            return true;
+            return write(payload.buffer);
         } else if (payload instanceof Buffer) {
-            this.blobs.push(payload);
-            return true;
-        } else if (typeof payload === 'string' && isHex(payload) && payload.length % 2 === 0) {
-            this.blobs.push(Buffer.from(payload, 'hex'));
-            return true;
+            return write(payload);
         } else if (typeof payload === 'string') {
-            this.blobs.push(Buffer.from(payload));
-            return true;
+            return write(Buffer.from(payload, encoding));
         } else { // if it's not a string, it needs to be
-            this.blobs.push(Buffer.from(JSON.stringify(payload)));
-            return true;
+            return write(Buffer.from(JSON.stringify(payload)));
         }
     }
 }
@@ -322,12 +363,6 @@ export class Writer {
 /* Helper methods */
 
 /** @ignore */
-function isHex (str: string): boolean {
-    const regex = /^[0-9a-fA-F]+$/;
-    return regex.test(str);
-}
-
-/** @ingore */
 function determineBits (value: BigInteger.BigInteger): number {
     if (value.toJSNumber() <= 255) {
         return 8;
@@ -341,23 +376,31 @@ function determineBits (value: BigInteger.BigInteger): number {
 }
 
 /** @ignore */
-function writeUInt64BE (buf: Buffer, value: BigInteger.BigInteger, offset?: number): Buffer {
+function writeUInt64BE (buf: Buffer, value: BigInteger.BigInteger, offset = 0): Buffer {
     const buffer = writeUInt64LE(buf, value, offset);
+
     const tempBuffer = Buffer.alloc(8);
+
     buffer.swap64().copy(tempBuffer, 0);
+
     return buffer;
 }
 
 /** @ignore */
-function writeUInt64LE (buf: Buffer, value: BigInteger.BigInteger, offset?: number): Buffer {
-    offset = offset || 0;
+function writeUInt64LE (buf: Buffer, value: BigInteger.BigInteger, offset = 0): Buffer {
     let bigNumber = value.toString(16);
+
     if (bigNumber.length % 2 !== 0) {
         bigNumber = bigNumber.padStart(Math.ceil(bigNumber.length / 2) * 2, '0');
     }
+
     const bigBuffer = Buffer.from(bigNumber, 'hex');
+
     const tempBuffer = Buffer.alloc(8);
+
     bigBuffer.copy(tempBuffer, 8 - bigBuffer.length);
+
     tempBuffer.swap64().copy(buf, offset);
+
     return buf;
 }

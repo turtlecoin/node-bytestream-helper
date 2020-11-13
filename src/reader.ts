@@ -2,75 +2,97 @@
 //
 // Please see the included LICENSE file for more information.
 
-'use strict';
-
 import { Varint } from './varint';
 import { Writer } from './writer';
 import * as BigInteger from 'big-integer';
+import { Writable } from 'stream';
 
 /**
  * Allows for easy reading of blob encoded data
  */
-export class Reader {
-    /**
-     * The current offset of the reader cursor in the stream
-     */
-    public currentOffset = 0;
-    private blob: Buffer = Buffer.alloc(0);
+export class Reader extends Writable {
+    private m_current_offset = 0;
+    private m_buffer: Buffer = Buffer.alloc(0);
 
     /**
      * Constructs a new Reader instance
      * @param blob either another copy of a reader, writer, a Buffer, or a hexadecimal string representation of the data
+     * @param encoding the encoding to use for the resulting string
      */
-    constructor (blob: Reader | Writer | Buffer | string) {
+    constructor (blob: Reader | Writer | Buffer | string = Buffer.alloc(0), encoding: BufferEncoding = 'hex') {
+        super();
+
         if (blob instanceof Reader) {
             return blob;
         } else if (blob instanceof Writer) {
-            this.blob = blob.buffer;
+            this.m_buffer = blob.buffer;
         } else if (blob instanceof Buffer) {
-            this.blob = blob;
-        } else if (typeof blob === 'string' && blob.length % 2 === 0) {
-            this.blob = Buffer.from(blob, 'hex');
+            this.m_buffer = blob;
+        } else if (typeof blob === 'string') {
+            this.m_buffer = Buffer.from(blob, encoding);
         } else {
             throw new Error('Unknown data type');
         }
-        this.currentOffset = 0;
-    }
 
-    /**
-     * @returns the length of the blob in bytes
-     */
-    get length (): number {
-        return this.blob.length;
-    }
-
-    /**
-     * @returns the subset of the buffer that has not been read yet
-     */
-    get unreadBuffer (): Buffer {
-        return this.blob.slice(this.currentOffset);
+        this.m_current_offset = 0;
     }
 
     /**
      * @returns the entire reader buffer
      */
     get buffer (): Buffer {
-        return this.blob;
+        return this.m_buffer;
+    }
+
+    /**
+     * @returns the length of the blob in bytes
+     */
+    get length (): number {
+        return this.m_buffer.length;
+    }
+
+    /**
+     * @returns the current offset of the read buffer
+     */
+    get offset (): number {
+        return this.m_current_offset;
     }
 
     /**
      * @returns the number of bytes remaining in the stream that have not been read
      */
     get unreadBytes (): number {
-        const unreadBytes = this.blob.length - this.currentOffset;
+        const unreadBytes = this.length - this.offset;
+
         return (unreadBytes >= 0) ? unreadBytes : 0;
+    }
+
+    /**
+     * @returns the subset of the buffer that has not been read yet
+     */
+    get unreadBuffer (): Buffer {
+        return this.m_buffer.slice(this.offset);
+    }
+
+    /**
+     * Extends the Stream.Writable interface such that we can be piped to
+     * @param chunk
+     * @param encoding
+     * @param callback
+     * @ignore
+     */
+    public _write (chunk: Buffer | Uint8Array | string, encoding: BufferEncoding, callback: () => void) {
+        this.append(chunk);
+
+        callback();
     }
 
     /**
      * Appends the data given to the end of the current buffer of the instance of the reader
      * @param blob either another copy of a reader, writer, a Buffer, or a hexadecimal string representation of the data
+     * @param encoding the string encoding used
      */
-    public append (blob: Reader | Writer | Buffer | string) {
+    public append (blob: Reader | Writer | Buffer | Uint8Array | string, encoding: BufferEncoding = 'hex') {
         let buffer: Buffer;
 
         if (blob instanceof Reader) {
@@ -79,13 +101,15 @@ export class Reader {
             buffer = blob.buffer;
         } else if (blob instanceof Buffer) {
             buffer = blob;
+        } else if (blob instanceof Uint8Array) {
+            buffer = Buffer.from(blob);
         } else if (typeof blob === 'string' && blob.length % 2 === 0) {
-            buffer = Buffer.from(blob, 'hex');
+            buffer = Buffer.from(blob, encoding);
         } else {
             throw new Error('Unknown data type');
         }
 
-        this.blob = Buffer.concat([this.blob, buffer]);
+        this.m_buffer = Buffer.concat([this.m_buffer, buffer]);
     }
 
     /**
@@ -94,31 +118,46 @@ export class Reader {
      * @returns a buffer containing the requested number of bytes
      */
     public bytes (count = 1): Buffer {
-        const start = this.currentOffset;
-        this.currentOffset += count;
-        return this.blob.slice(start, this.currentOffset);
+        const start = this.offset;
+
+        this.m_current_offset += count;
+
+        return this.m_buffer.slice(start, this.offset);
+    }
+
+    /**
+     * Compacts the current reader buffer by trimming data before the current offset
+     */
+    public compact () {
+        this.m_buffer = this.buffer.slice(this.offset);
     }
 
     /**
      * Reads the next hash of the given length from the stream and returns the value in hexadecimal notation
      * @param length the length of the hash in bytes
+     * @param encoding the encoding to use for the resulting string
      * @returns the hash as a string
      */
-    public hash (length = 32): string {
-        const start = this.currentOffset;
-        this.currentOffset += length;
-        return this.blob.slice(start, this.currentOffset).toString('hex');
+    public hash (length = 32, encoding: BufferEncoding = 'hex'): string {
+        const start = this.offset;
+
+        this.m_current_offset += length;
+
+        return this.m_buffer.slice(start, this.m_current_offset).toString(encoding);
     }
 
     /**
      * Reads the next supplied number of bytes and returns the result in hexadecimal notation
      * @param [count=1] the number of bytes to read
+     * @param encoding the encoding to use for the resulting string
      * @returns a string containing the bytes in hexadecimal
      */
-    public hex (count = 1): string {
-        const start = this.currentOffset;
-        this.currentOffset += count;
-        return this.blob.slice(start, this.currentOffset).toString('hex');
+    public hex (count = 1, encoding: BufferEncoding = 'hex'): string {
+        const start = this.offset;
+
+        this.m_current_offset += count;
+
+        return this.m_buffer.slice(start, this.offset).toString(encoding);
     }
 
     /**
@@ -128,8 +167,6 @@ export class Reader {
      * @returns the value read
      */
     public int_t (bits: number, be = false): BigInteger.BigInteger {
-        be = be || false;
-
         if (bits % 8 !== 0) {
             throw new Error('bits must be a multiple of 8');
         }
@@ -140,26 +177,27 @@ export class Reader {
             throw new Error('Not enough bytes remaining in the buffer');
         }
 
-        const start = this.currentOffset;
-        this.currentOffset += 4;
+        const start = this.offset;
+
+        this.m_current_offset += bytes;
 
         switch (bytes) {
-        case 1:
-            return BigInteger(this.blob.readInt8(start));
-        case 2:
-            if (be) {
-                return BigInteger(this.blob.readInt16BE(start));
-            } else {
-                return BigInteger(this.blob.readInt16LE(start));
-            }
-        case 4:
-            if (be) {
-                return BigInteger(this.blob.readInt32BE(start));
-            } else {
-                return BigInteger(this.blob.readInt32LE(start));
-            }
-        default:
-            throw new Error('cannot read int64_t');
+            case 1:
+                return BigInteger(this.m_buffer.readInt8(start));
+            case 2:
+                if (be) {
+                    return BigInteger(this.m_buffer.readInt16BE(start));
+                } else {
+                    return BigInteger(this.m_buffer.readInt16LE(start));
+                }
+            case 4:
+                if (be) {
+                    return BigInteger(this.m_buffer.readInt32BE(start));
+                } else {
+                    return BigInteger(this.m_buffer.readInt32LE(start));
+                }
+            default:
+                throw new Error('cannot read int64_t');
         }
     }
 
@@ -190,11 +228,18 @@ export class Reader {
     }
 
     /**
+     * Resets the reader offset to the start of the buffer
+     */
+    public reset () {
+        this.m_current_offset = 0;
+    }
+
+    /**
      * Skips the specified number of bytes in the stream
      * @param [count=1] the number of bytes to skip
      */
     public skip (count = 1) {
-        this.currentOffset += count;
+        this.m_current_offset += count;
     }
 
     /**
@@ -207,6 +252,14 @@ export class Reader {
         const epoch = BigInteger(buffer.toString('hex'), 16).toJSNumber();
 
         return new Date(epoch * 1000);
+    }
+
+    /**
+     * Returns the current read buffer as a string
+     * @param encoding
+     */
+    public toString (encoding: BufferEncoding = 'hex'): string {
+        return this.buffer.toString(encoding);
     }
 
     /**
@@ -228,32 +281,33 @@ export class Reader {
             throw new Error('Not enough bytes remaining in the buffer');
         }
 
-        const start = this.currentOffset;
-        this.currentOffset += bytes;
+        const start = this.offset;
+
+        this.m_current_offset += bytes;
 
         switch (bytes) {
-        case 1:
-            return BigInteger(this.blob.readUInt8(start));
-        case 2:
-            if (be) {
-                return BigInteger(this.blob.readUInt16BE(start));
-            } else {
-                return BigInteger(this.blob.readUInt16LE(start));
-            }
-        case 4:
-            if (be) {
-                return BigInteger(this.blob.readUInt32BE(start));
-            } else {
-                return BigInteger(this.blob.readUInt32LE(start));
-            }
-        case 8:
-            if (be) {
-                return readUInt64BE(this.blob, start);
-            } else {
-                return readUInt64LE(this.blob, start);
-            }
-        default:
-            throw new Error('Cannot read uint_t');
+            case 1:
+                return BigInteger(this.m_buffer.readUInt8(start));
+            case 2:
+                if (be) {
+                    return BigInteger(this.m_buffer.readUInt16BE(start));
+                } else {
+                    return BigInteger(this.m_buffer.readUInt16LE(start));
+                }
+            case 4:
+                if (be) {
+                    return BigInteger(this.m_buffer.readUInt32BE(start));
+                } else {
+                    return BigInteger(this.m_buffer.readUInt32LE(start));
+                }
+            case 8:
+                if (be) {
+                    return readUInt64BE(this.m_buffer, start);
+                } else {
+                    return readUInt64LE(this.m_buffer, start);
+                }
+            default:
+                throw new Error('Cannot read uint_t');
         }
     }
 
@@ -299,19 +353,22 @@ export class Reader {
      * @returns the value
      */
     public varint (peek = false, levin = false): BigInteger.BigInteger {
-        const start = this.currentOffset;
+        const start = this.m_current_offset;
 
         if (!levin) {
             do {
-                if (this.blob.readUInt8(this.currentOffset) < 128) {
-                    this.currentOffset++;
-                    const tmp = this.blob.slice(start, this.currentOffset);
+                if (this.m_buffer.readUInt8(this.m_current_offset) < 128) {
+                    this.m_current_offset++;
+
+                    const tmp = this.m_buffer.slice(start, this.offset);
+
                     if (peek) {
-                        this.currentOffset = start;
+                        this.m_current_offset = start;
                     }
                     return Varint.decode(tmp);
                 }
-                this.currentOffset++;
+
+                this.m_current_offset++;
             } while (true);
         } else {
             let value: BigInteger.BigInteger | number = this.uint8_t().toJSNumber();
@@ -323,18 +380,18 @@ export class Reader {
             let bytesLeft = 0;
 
             switch (sizeMask) {
-            case 0:
-                bytesLeft = 0;
-                break;
-            case 1:
-                bytesLeft = 1;
-                break;
-            case 2:
-                bytesLeft = 3;
-                break;
-            case 3:
-                bytesLeft = 7;
-                break;
+                case 0:
+                    bytesLeft = 0;
+                    break;
+                case 1:
+                    bytesLeft = 1;
+                    break;
+                case 2:
+                    bytesLeft = 3;
+                    break;
+                case 3:
+                    bytesLeft = 7;
+                    break;
             }
 
             for (let i = 1; i <= bytesLeft; ++i) {
@@ -360,16 +417,19 @@ function readUInt64LE (buf: Buffer, offset = 0, noAssert = false): BigInteger.Bi
         if (noAssert) {
             return BigInteger.zero;
         }
+
         throw new Error('Out of bounds');
     }
 
     const first = buf[offset];
+
     const last = buf[offset + 7];
 
     if (first === undefined || last === undefined) {
         if (noAssert) {
             return BigInteger.zero;
         }
+
         throw new Error('Out of bounds');
     }
 
@@ -377,6 +437,7 @@ function readUInt64LE (buf: Buffer, offset = 0, noAssert = false): BigInteger.Bi
         (buf[++offset] * Math.pow(2, 8)) +
         (buf[++offset] * Math.pow(2, 16)) +
         (buf[++offset] * Math.pow(2, 24));
+
     const hi = (buf[++offset] +
         (buf[++offset] * Math.pow(2, 8)) +
         (buf[++offset] * Math.pow(2, 16)) +
