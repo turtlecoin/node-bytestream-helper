@@ -109,8 +109,6 @@ export class Writer extends Readable {
      * @param [be] whether the value should be written in big endian
      */
     public int_t (value: BigInteger.BigInteger | number, bits?: number, be = false): boolean {
-        be = be || false;
-
         if (bits && bits % 8 !== 0) {
             throw new Error('bits must be a multiple of 8');
         }
@@ -217,6 +215,10 @@ export class Writer extends Readable {
 
         if (typeof value === 'number') {
             value = BigInteger(value);
+        }
+
+        if (value.lesser(0)) {
+            throw new RangeError('cannot store signed value in unsigned type');
         }
 
         if (!bits) {
@@ -373,8 +375,16 @@ function determineBits (value: BigInteger.BigInteger): number {
     const bytes: number [] = [1, 2, 4, 8, 16, 32, 64, 128, 256, 512, 1024];
 
     for (const byte of bytes) {
-        const check = BigInteger(2).pow(byte * 8)
-            .subtract(1);
+        let check = BigInteger.zero;
+
+        if (value.greater(-1)) {
+            check = BigInteger(2).pow(byte * 8)
+                .subtract(1);
+        } else {
+            check = BigInteger(2).pow((byte * 8) - 1)
+                .subtract(1)
+                .abs();
+        }
 
         if (value.compare(check) <= 0) {
             return byte * 8;
