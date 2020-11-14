@@ -9,6 +9,7 @@ import { Writable } from 'stream';
 
 /**
  * Allows for easy reading of blob encoded data
+ * @noInehritDoc
  */
 export class Reader extends Writable {
     private m_current_offset = 0;

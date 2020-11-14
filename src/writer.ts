@@ -9,6 +9,7 @@ import { Readable } from 'stream';
 
 /**
  * Allows for easy writing of blob encoded data
+ * @noInehritDoc
  */
 export class Writer extends Readable {
     private m_buffer: Buffer = Buffer.alloc(0);
