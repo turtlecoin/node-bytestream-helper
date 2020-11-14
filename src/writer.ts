@@ -223,34 +223,13 @@ export class Writer extends Readable {
             bits = determineBits(value);
         }
 
+        if (bits % 8 !== 0) {
+            throw new Error('bits must be a multiple of 8');
+        }
+
         const bytes = bits / 8;
 
-        let buf = Buffer.alloc(bytes);
-
-        switch (bytes) {
-            case 1:
-                buf.writeUInt8(value.toJSNumber(), 0);
-                break;
-            case 2:
-                if (be) {
-                    buf.writeInt16BE(value.toJSNumber(), 0);
-                } else {
-                    buf.writeUInt16LE(value.toJSNumber(), 0);
-                }
-                break;
-            case 4:
-                if (be) {
-                    buf.writeUInt32BE(value.toJSNumber(), 0);
-                } else {
-                    buf.writeUInt32LE(value.toJSNumber(), 0);
-                }
-                break;
-            case 8:
-                buf = (be) ? writeUInt64BE(buf, value) : writeUInt64LE(buf, value);
-                break;
-            default:
-                return false;
-        }
+        const buf = (be) ? writeUIntBE(value, bytes) : writeUIntLE(value, bytes);
 
         this.write(buf);
 
@@ -290,6 +269,33 @@ export class Writer extends Readable {
      */
     public uint64_t (value: BigInteger.BigInteger | number, be = false): boolean {
         return this.uint_t(value, 64, be);
+    }
+
+    /**
+     * Writes a uint128_t to the data
+     * @param value
+     * @param [be] whether the value should be written in big endian
+     */
+    public uint128_t (value: BigInteger.BigInteger | number, be = false): boolean {
+        return this.uint_t(value, 128, be);
+    }
+
+    /**
+     * Writes a uint256_t to the data
+     * @param value
+     * @param [be] whether the value should be written in big endian
+     */
+    public uint256_t (value: BigInteger.BigInteger | number, be = false): boolean {
+        return this.uint_t(value, 256, be);
+    }
+
+    /**
+     * Writes a uint512_t to the data
+     * @param value
+     * @param [be] whether the value should be written in big endian
+     */
+    public uint512_t (value: BigInteger.BigInteger | number, be = false): boolean {
+        return this.uint_t(value, 512, be);
     }
 
     /**
@@ -364,43 +370,50 @@ export class Writer extends Readable {
 
 /** @ignore */
 function determineBits (value: BigInteger.BigInteger): number {
-    if (value.toJSNumber() <= 255) {
-        return 8;
-    } else if (value.toJSNumber() <= 65535) {
-        return 16;
-    } else if (value.toJSNumber() <= 4294967295) {
-        return 32;
-    } else {
-        return 64;
-    }
-}
+    const bytes: number [] = [1, 2, 4, 8, 16, 32, 64, 128, 256, 512, 1024];
 
-/** @ignore */
-function writeUInt64BE (buf: Buffer, value: BigInteger.BigInteger, offset = 0): Buffer {
-    const buffer = writeUInt64LE(buf, value, offset);
+    for (const byte of bytes) {
+        const check = BigInteger(2).pow(byte * 8)
+            .subtract(1);
 
-    const tempBuffer = Buffer.alloc(8);
-
-    buffer.swap64().copy(tempBuffer, 0);
-
-    return buffer;
-}
-
-/** @ignore */
-function writeUInt64LE (buf: Buffer, value: BigInteger.BigInteger, offset = 0): Buffer {
-    let bigNumber = value.toString(16);
-
-    if (bigNumber.length % 2 !== 0) {
-        bigNumber = bigNumber.padStart(Math.ceil(bigNumber.length / 2) * 2, '0');
+        if (value.compare(check) <= 0) {
+            return byte * 8;
+        }
     }
 
-    const bigBuffer = Buffer.from(bigNumber, 'hex');
+    throw new RangeError('value is out of range');
+}
 
-    const tempBuffer = Buffer.alloc(8);
+/**
+ * @ignore
+ * @param value
+ * @param bytes
+ */
+function writeUIntBE (value: BigInteger.BigInteger, bytes: number): Buffer {
+    const hex = value.toString(16).padStart(bytes * 2, '0');
 
-    bigBuffer.copy(tempBuffer, 8 - bigBuffer.length);
+    return Buffer.from(hex, 'hex');
+}
 
-    tempBuffer.swap64().copy(buf, offset);
+/**
+ * @ignore
+ * @param value
+ * @param bytes
+ */
+function writeUIntLE (value: BigInteger.BigInteger, bytes: number): Buffer {
+    const hex = value.toString(16).padStart(bytes * 2, '0');
 
-    return buf;
+    const buffer = Buffer.from(hex, 'hex');
+
+    const tempBuffer = Buffer.alloc(bytes);
+
+    let position = bytes - 1;
+
+    for (const slice of buffer) {
+        tempBuffer[position] = slice;
+
+        position -= 1;
+    }
+
+    return tempBuffer;
 }

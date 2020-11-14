@@ -6,6 +6,7 @@ import * as assert from 'assert';
 import * as BigInteger from 'big-integer';
 import { describe, it } from 'mocha';
 import { Reader, Writer } from '../src';
+import { format } from 'util';
 
 describe('hash', () => {
     it('7fb97df81221dd1366051b2d0bc7f49c66c22ac4431d879c895b06d66ef66f4c', () => {
@@ -598,5 +599,69 @@ describe('Levin varint', () => {
 
         assert(w.blob === 'feffffff');
         assert(r.varint(false, true).toJSNumber() === value);
+    });
+});
+
+describe('Extremely Large Values', () => {
+    const bitSizes: number[] = [128, 256, 512, 1024, 2048, 4096, 8192];
+
+    describe('Big Endian', () => {
+        for (const bits of bitSizes) {
+            const value = BigInteger(2).pow(bits)
+                .subtract(1);
+
+            const subValue = value.divide(2);
+
+            it(format('%s [%s bits]', subValue.toString(), bits), () => {
+                const w = new Writer();
+
+                w.uint_t(subValue, bits, true);
+
+                const r = new Reader(w.blob);
+
+                assert.deepEqual(r.uint_t(bits, true), subValue);
+            });
+
+            it(format('%s [%s bits]', value.toString(), bits), () => {
+                const w = new Writer();
+
+                w.uint_t(value, bits, true);
+
+                const r = new Reader(w.blob);
+
+                assert(w.blob === ''.padStart(bits / 4, 'f'));
+                assert.deepEqual(r.uint_t(bits, true), value);
+            });
+        }
+    });
+
+    describe('Little Endian', () => {
+        for (const bits of bitSizes) {
+            const value = BigInteger(2).pow(bits)
+                .subtract(1);
+
+            const subValue = value.divide(2);
+
+            it(format('%s [%s bits]', subValue.toString(), bits), () => {
+                const w = new Writer();
+
+                w.uint_t(subValue, bits);
+
+                const r = new Reader(w.blob);
+
+                assert.deepEqual(r.uint_t(bits), subValue);
+            });
+
+            it(format('%s [%s bits]', value.toString(), bits), () => {
+                const w = new Writer();
+
+                w.uint_t(value, bits);
+
+                const r = new Reader(w.blob);
+
+                assert(w.blob === ''.padStart(bits / 4, 'f'));
+                assert.deepEqual(r.uint_t(bits), value);
+            });
+        }
     });
 });

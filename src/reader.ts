@@ -285,29 +285,10 @@ export class Reader extends Writable {
 
         this.m_current_offset += bytes;
 
-        switch (bytes) {
-            case 1:
-                return BigInteger(this.m_buffer.readUInt8(start));
-            case 2:
-                if (be) {
-                    return BigInteger(this.m_buffer.readUInt16BE(start));
-                } else {
-                    return BigInteger(this.m_buffer.readUInt16LE(start));
-                }
-            case 4:
-                if (be) {
-                    return BigInteger(this.m_buffer.readUInt32BE(start));
-                } else {
-                    return BigInteger(this.m_buffer.readUInt32LE(start));
-                }
-            case 8:
-                if (be) {
-                    return readUInt64BE(this.m_buffer, start);
-                } else {
-                    return readUInt64LE(this.m_buffer, start);
-                }
-            default:
-                throw new Error('Cannot read uint_t');
+        if (be) {
+            return readUIntBE(this.buffer, bytes, start);
+        } else {
+            return readUIntLE(this.buffer, bytes, start);
         }
     }
 
@@ -344,6 +325,33 @@ export class Reader extends Writable {
      */
     public uint64_t (be = false): BigInteger.BigInteger {
         return this.uint_t(64, be);
+    }
+
+    /**
+     * Reads a uint128_t
+     * @param [be] whether to use big endian
+     * @returns the value
+     */
+    public uint128_t (be = false): BigInteger.BigInteger {
+        return this.uint_t(128, be);
+    }
+
+    /**
+     * Reads a uint256_t
+     * @param [be] whether to use big endian
+     * @returns the value
+     */
+    public uint256_t (be = false): BigInteger.BigInteger {
+        return this.uint_t(256, be);
+    }
+
+    /**
+     * Reads a uint512_t
+     * @param [be] whether to use big endian
+     * @returns the value
+     */
+    public uint512_t (be = false): BigInteger.BigInteger {
+        return this.uint_t(512, be);
     }
 
     /**
@@ -406,42 +414,64 @@ export class Reader extends Writable {
 
 /* Helper methods */
 
-/** @ignore */
-function readUInt64BE (buf: Buffer, offset = 0, noAssert = false): BigInteger.BigInteger {
-    return readUInt64LE(buf.slice(offset, offset + 8).swap64(), 0, noAssert);
+/**
+ * @ignore
+ * @param buffer
+ * @param bytes
+ * @param offset
+ * @param noAssert
+ */
+function readUIntBE (
+    buffer: Buffer,
+    bytes: number,
+    offset = 0,
+    noAssert = false
+): BigInteger.BigInteger {
+    if (buffer.length < offset + bytes) {
+        if (noAssert) {
+            return BigInteger.zero;
+        }
+
+        throw new RangeError('Out of bounds');
+    }
+
+    const slice = buffer.slice(offset, offset + bytes);
+
+    return BigInteger(slice.toString('hex'), 16);
 }
 
-/** @ignore */
-function readUInt64LE (buf: Buffer, offset = 0, noAssert = false): BigInteger.BigInteger {
-    if (buf.length < offset + 8) {
+/**
+ * @ignore
+ * @param buffer
+ * @param bytes
+ * @param offset
+ * @param noAssert
+ */
+function readUIntLE (
+    buffer: Buffer,
+    bytes: number,
+    offset = 0,
+    noAssert = false
+): BigInteger.BigInteger {
+    if (buffer.length < offset + bytes) {
         if (noAssert) {
             return BigInteger.zero;
         }
 
-        throw new Error('Out of bounds');
+        throw new RangeError('Out of bounds');
     }
 
-    const first = buf[offset];
+    const buf = buffer.slice(offset, offset + bytes);
 
-    const last = buf[offset + 7];
+    const tempBuffer = Buffer.alloc(bytes);
 
-    if (first === undefined || last === undefined) {
-        if (noAssert) {
-            return BigInteger.zero;
-        }
+    let position = bytes - 1;
 
-        throw new Error('Out of bounds');
+    for (const slice of buf) {
+        tempBuffer[position] = slice;
+
+        position -= 1;
     }
 
-    const lo = first +
-        (buf[++offset] * Math.pow(2, 8)) +
-        (buf[++offset] * Math.pow(2, 16)) +
-        (buf[++offset] * Math.pow(2, 24));
-
-    const hi = (buf[++offset] +
-        (buf[++offset] * Math.pow(2, 8)) +
-        (buf[++offset] * Math.pow(2, 16)) +
-        (last * Math.pow(2, 24)));
-
-    return BigInteger(lo).add(BigInteger(hi).shiftLeft(32));
+    return BigInteger(tempBuffer.toString('hex'), 16);
 }
