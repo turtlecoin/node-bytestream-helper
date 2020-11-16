@@ -230,9 +230,10 @@ export class Reader extends Writable {
 
     /**
      * Resets the reader offset to the start of the buffer
+     * @param offset the offset to reset the reader to
      */
-    public reset () {
-        this.m_current_offset = 0;
+    public reset (offset = 0) {
+        this.m_current_offset = offset;
     }
 
     /**
