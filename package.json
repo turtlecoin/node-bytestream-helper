@@ -1,6 +1,6 @@
 {
   "name": "@turtlecoin/bytestream",
-  "version": "0.0.13",
+  "version": "0.0.14",
   "description": "bytestream serialization helper for handling over the wire encoded byte streams",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",

@@ -128,7 +128,7 @@ export class Reader extends Writable {
 
     /**
      * Compacts the current reader buffer by trimming data before the current offset, or
-     * if specified, the given offset
+     * if specified, the given offset and re-setting the current reading offset to 0
      * @param offset the offset to compact from
      */
     public compact (offset?: number) {
@@ -137,6 +137,8 @@ export class Reader extends Writable {
         } else {
             this.m_buffer = this.buffer.slice(offset);
         }
+
+        this.m_current_offset = 0;
     }
 
     /**
