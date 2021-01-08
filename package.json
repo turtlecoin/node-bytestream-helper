@@ -18,11 +18,11 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/turtlecoin/node-bytestream-helper-helper.git"
+    "url": "git+https://github.com/turtlecoin/node-bytestream-helper.git"
   },
   "homepage": "https://bytestream.turtlecoin.dev",
   "bugs": {
-    "url": "https://github.com/turtlecoin/node-bytestream-helper-helper/issues"
+    "url": "https://github.com/turtlecoin/node-bytestream-helper/issues"
   },
   "keywords": [
     "TurtleCoin",
